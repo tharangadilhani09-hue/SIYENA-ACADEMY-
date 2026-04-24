@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siyena Academy - Homework Tracker</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+        .header { background: #ff0000; color: white; text-align: center; padding: 20px; font-size: 26px; font-weight: bold; border-bottom: 5px solid #000; position: relative; }
+        
+        /* Add Button Style */
+        .add-hw-btn {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            background: #000; color: #fff; border: none; padding: 10px 15px;
+            border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px;
+        }
+        .add-hw-btn:hover { background: #333; }
+
+        .container { padding: 15px; overflow-x: auto; }
+        table { border-collapse: collapse; background: white; width: 100%; min-width: 1200px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 10px 5px; text-align: center; }
+        .header-row { background: #800000; color: white; }
+        .name-col { text-align: left; font-weight: bold; background: #fff; position: sticky; left: 0; z-index: 5; border-right: 2px solid #800000; min-width: 220px; padding-left: 10px; }
+        
+        .hw-name-edit {
+            background: rgba(255, 255, 255, 0.1); border: 1px dashed #fff; color: #fff;
+            padding: 5px; width: 90%; border-radius: 4px; text-align: center; font-size: 12px;
+        }
+        .hw-name-edit:focus { background: #fff; color: #000; outline: none; border-style: solid; }
+
+        .hw-btn { width: 70px; height: 35px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .done { background-color: #28a745; color: white; border: none; }
+        .not-done { background-color: #f8f9fa; color: #555; }
+        .sub-tag { font-size: 9px; display: block; opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <button class="add-hw-btn" onclick="addNewHW()">+ ADD HW</button>
+    SIYENA ACADEMY - HOMEWORK
+</div>
+
+<div class="container">
+    <table>
+        <thead>
+            <tr class="header-row" id="headerRow">
+                <th>ID</th>
+                <th class="name-col">ශිෂ්‍ය නාමය</th>
+                </tr>
+        </thead>
+        <tbody id="hwTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    // 1. පින්තූරයේ තිබූ සම්පූර්ණ නාම ලේඛනය
+    const students = [
+        "LIYAPALA MENDIS", "MANUKA DEWSITH", "RASHELI PABHODA", "MAYUKA DASAMTH", "MAYICAL JAYASANTE",
+        "NETHULI SAKITHMA", "SAVITHRI MONA", "PANUGA CHAWSATH", "PAHANDI MAYOPA", "INDUWARI THEWANI",
+        "INDUWAN THEWANI", "THARANGA PABAYA", "GULIYAK", "MASSAK", "RIJUWAK", "MALAYAK", "WADAYAK",
+        "PABAYAK", "DOLI BOLI", "DOLI AMANDI", "THARUKA DAMSATH", "BOLI AMANDI", "KASUNI UMESHA",
+        "PABASARANI DEWM", "PABASARA DEWMIN", "NETHSARA JAYALATH", "METHUKI AKARSHA", "PABHODA GIHANI",
+        "MINUWAN DEWHAR", "MADHURA NIMASAD", "DINUSHA METHSARA", "MALMI AMAYA", "PABHODA VISHMI",
+        "NETHMI KAVEESHA", "KASUN GANEWATTA", "NAVIN PABASARA", "KASTURI PERERA", "UMAYA PABSARA",
+        "SITHUKA IMAL", "DIWUL IMSARA", "THINAYA MENUKI", "SAHELI HIRUNDIKA", "AHINSA SANUHARI",
+        "SANJANA RUBERU", "GAVINDU NIMESH", "SADEESHA AKITHMI", "NIPUN THEJAN", "DILUNA DAMSATH",
+        "DANUPA NIMETH", "DINULI DILSHARA"
+    ];
+
+    let hwCount = parseInt(localStorage.getItem('total-hw-count')) || 5;
+
+    function saveHWTitle(index, val) {
+        localStorage.setItem(`hw-title-${index}`, val);
+    }
+
+    function toggleHW(key) {
+        const btn = document.getElementById(key);
+        let nextVal = btn.innerText === "DONE" ? "NO" : "DONE";
+        btn.innerText = nextVal;
+        btn.className = "hw-btn " + (nextVal === "DONE" ? "done" : "not-done");
+        localStorage.setItem(key, nextVal);
+    }
+
+    function addNewHW() {
+        hwCount++;
+        localStorage.setItem('total-hw-count', hwCount);
+        location.reload(); // පිටුව Reload කර අලුත් Column එක පෙන්වීම
+    }
+
+    function initTable() {
+        const headerRow = document.getElementById('headerRow');
+        const body = document.getElementById('hwTableBody');
+
+        // Header සාදන්න
+        for (let i = 1; i <= hwCount; i++) {
+            let savedName = localStorage.getItem(`hw-title-${i}`) || `නම...`;
+            let th = document.createElement('th');
+            th.innerHTML = `
+                <span class="sub-tag">HW ${i}</span>
+                <input type="text" class="hw-name-edit" value="${savedName}" 
+                       onchange="saveHWTitle(${i}, this.value)" placeholder="ටයිප් කරන්න">
+            `;
+            headerRow.appendChild(th);
+        }
+
+        // සිසුන්ගේ පේළි සාදන්න
+        students.forEach((name, i) => {
+            let tr = document.createElement('tr');
+            let studentId = i + 1;
+            let html = `<td>${studentId}</td><td class="name-col">${name}</td>`;
+            
+            for (let h = 1; h <= hwCount; h++) {
+                let key = `hw-st-${studentId}-no${h}`;
+                let savedStatus = localStorage.getItem(key) || "NO";
+                let btnClass = savedStatus === "DONE" ? "done" : "not-done";
+                html += `<td><button id="${key}" class="hw-btn ${btnClass}" onclick="toggleHW('${key}')">${savedStatus}</button></td>`;
+            }
+            tr.innerHTML = html;
+            body.appendChild(tr);
+        });
+    }
+
+    initTable();
+</script>
+</body>
+</html>

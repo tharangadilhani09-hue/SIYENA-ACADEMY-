@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Fees Management System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f0f0f0; }
+        
+        /* Password Overlay Styling */
+        #login-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #800000; color: white; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        #login-overlay input {
+            padding: 10px; font-size: 18px; border-radius: 5px; border: none; margin: 10px;
+            text-align: center;
+        }
+        #login-overlay button {
+            padding: 10px 25px; font-size: 18px; cursor: pointer;
+            background: #27ae60; color: white; border: none; border-radius: 5px;
+        }
+
+        /* Original Styles */
+        .top-header {
+            background-color: #ff0000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 45px;
+            font-weight: bold;
+            border-bottom: 5px solid #8b0000;
+        }
+        .sub-info {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background-color: white;
+            border-bottom: 1px solid #ccc;
+            font-weight: bold;
+        }
+        .table-container { overflow-x: auto; padding: 10px; }
+        table { border-collapse: collapse; width: 100%; background: white; min-width: 1300px; }
+        th, td { border: 1px solid #000; padding: 5px; text-align: center; font-size: 14px; }
+        .header-row-1 { background-color: #800000; color: white; }
+        .name-col { text-align: left; padding-left: 10px; background-color: #f9f9f9; min-width: 200px; }
+        .fee-btn {
+            width: 45px; height: 25px; border-radius: 12px;
+            border: none; color: white; font-weight: bold;
+            cursor: pointer; transition: 0.2s;
+        }
+        .unpaid { background-color: #cc0000; }
+        .paid { background-color: #27ae60; }
+        .tute-header { background-color: #800000; color: white; }
+        .tute-cell { width: 30px; }
+        #save-status {
+            position: fixed; bottom: 10px; right: 10px;
+            background: #27ae60; color: white; padding: 5px 15px;
+            border-radius: 5px; display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <h2>SIYENA ACADEMY SYSTEM</h2>
+        <p>ඇතුළු වීමට මුරපදය ලබා දෙන්න</p>
+        <input type="password" id="pass-input" placeholder="Password Here...">
+        <button onclick="checkPass()">Login</button>
+    </div>
+
+    <div id="main-content" style="display: none;">
+        <div class="top-header">CLASS FEES DETAILS</div>
+        <div class="sub-info">
+            <div>GRADE 08 - HISTORY<br>SIYENA ACADEMY<br>2026</div>
+            <div style="font-size: 12px;">Siyena Academy System</div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr class="header-row-1">
+                        <th rowspan="2">ID</th>
+                        <th rowspan="2">ශිෂ්‍ය නාමය</th>
+                        <th>1/2026</th><th>2/2026</th><th>3/2026</th><th>4/2026</th><th>5/2026</th><th>6/2026</th>
+                        <th>7/2026</th><th>8/2026</th><th>9/2026</th><th>10/2026</th><th>11/2026</th><th>12/2026</th>
+                        <th colspan="5" class="tute-header">TUTE FEES</th>
+                    </tr>
+                    <tr class="header-row-1">
+                        <th>JAN</th><th>FEB</th><th>MAR</th><th>APR</th><th>MAY</th><th>JUN</th>
+                        <th>JUL</th><th>AUG</th><th>SEP</th><th>OCT</th><th>NOV</th><th>DEC</th>
+                        <th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th>
+                    </tr>
+                </thead>
+                <tbody id="feeTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="save-status">Saved!</div>
+
+    <script>
+        const CORRECT_PASS = "SIYENA@2026";
+
+        function checkPass() {
+            const input = document.getElementById('pass-input').value;
+            if (input === CORRECT_PASS) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                initTable(); // Initialize table only after login
+            } else {
+                alert("වැරදි මුරපදයක්! නැවත උත්සාහ කරන්න.");
+            }
+        }
+
+        // Add Enter key support for login
+        document.getElementById('pass-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkPass();
+            }
+        });
+
+        const students = [
+            "LIYAPALA MENDIS","MAYICAL JAYASANTE","NETHULI SAKITHMA","SAVITHRI MONA","PANUGA CHAWSATH","PAHANDI MAYOPA","GULIYAK","MASSAK","RIJUWAK","MALAYAK","VADAYAK","PABAYAK","DOLI BOLI", "DOLI AMANDI","BOLI AMANDI","DIWUL IMSARA","KASUN GANEWATTA","NETHSARA JAYALATH"
+
+        ];
+
+        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+        const tableBody = document.getElementById('feeTableBody');
+        let storageData = JSON.parse(localStorage.getItem('academyProData')) || {};
+
+        function initTable() {
+            tableBody.innerHTML = ""; // Clear table before loading
+            students.forEach((name, index) => {
+                let id = (index + 1).toString();
+                let row = `<tr>
+                    <td>${id}</td>
+                    <td class="name-col">${name}</td>`;
+                
+                months.forEach(m => {
+                    let key = `fee-${id}-${m}`;
+                    let status = storageData[key] || 'U';
+                    let btnClass = status === 'P' ? 'paid' : 'unpaid';
+                    row += `<td><button id="${key}" class="fee-btn ${btnClass}" onclick="toggleStatus('${key}')">${status}</button></td>`;
+                });
+
+                for(let i=1; i<=5; i++) {
+                    let tKey = `tute-${id}-${i}`;
+                    let checked = storageData[tKey] ? 'checked' : '';
+                    row += `<td class="tute-cell"><input type="checkbox" id="${tKey}" ${checked} onchange="saveCheck('${tKey}')"></td>`;
+                }
+
+                row += `</tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        function toggleStatus(key) {
+            const btn = document.getElementById(key);
+            if (btn.innerText === 'U') {
+                btn.innerText = 'P';
+                btn.className = 'fee-btn paid';
+                storageData[key] = 'P';
+            } else {
+                btn.innerText = 'U';
+                btn.className = 'fee-btn unpaid';
+                storageData[key] = 'U';
+            }
+            syncStorage();
+        }
+
+        function saveCheck(key) {
+            const cb = document.getElementById(key);
+            storageData[key] = cb.checked;
+            syncStorage();
+        }
+
+        function syncStorage() {
+            localStorage.setItem('academyProData', JSON.stringify(storageData));
+            const status = document.getElementById('save-status');
+            status.style.display = 'block';
+            setTimeout(() => status.style.display = 'none', 1000);
+        }
+    </script>
+</body>
+</html>

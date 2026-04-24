@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Siyena Academy - Secure Attendance</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f4; }
+        
+        /* Password Overlay */
+        #lock-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1a1a1a; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999; color: white;
+        }
+        .pass-box {
+            padding: 20px; background: #333; border-radius: 10px;
+            text-align: center; border: 2px solid #ff0000;
+        }
+        input[type="password"] {
+            padding: 10px; width: 200px; border-radius: 5px; border: none;
+            margin-bottom: 10px; font-size: 16px; text-align: center;
+        }
+        .login-btn {
+            padding: 10px 25px; background: #ff0000; color: white;
+            border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+        }
+
+        /* Main Content (Hidden by default) */
+        #main-content { display: none; }
+
+        .top-banner {
+            background-color: #ff0000; color: white; text-align: center;
+            padding: 20px; font-size: 35px; font-weight: bold; border-bottom: 5px solid #000;
+        }
+        .sub-info-bar { display: flex; justify-content: space-between; padding: 15px 25px; background: white; border-bottom: 2px solid #000; }
+        .table-container { overflow: auto; max-height: 80vh; padding: 10px; }
+        table { border-collapse: collapse; background: white; }
+        th, td { border: 1px solid #000; padding: 5px; text-align: center; font-size: 13px; min-width: 60px; }
+        .header-row-dark { background-color: #800000; color: white; position: sticky; top: 0; z-index: 10; }
+        .name-col { text-align: left; padding-left: 15px; font-weight: bold; min-width: 230px; background: #fff; position: sticky; left: 0; z-index: 5; border-right: 2px solid #000; }
+        .id-col { position: sticky; left: -1px; z-index: 6; background: #fff; }
+        .date-input { background: transparent; border: none; color: white; text-align: center; font-weight: bold; width: 60px; font-size: 11px; }
+        .status-btn { width: 45px; height: 30px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; cursor: pointer; font-size: 11px; }
+        .btn-pp { background-color: #28a745; color: white; }
+        .btn-ab { background-color: #cc0000; color: white; }
+        .btn-o  { background-color: #ffc107; color: black; }
+        #save-status { position: fixed; bottom: 15px; right: 15px; background: #28a745; color: white; padding: 8px 18px; border-radius: 5px; display: none; font-weight: bold; z-index: 100; }
+    </style>
+</head>
+<body>
+
+    <div id="lock-screen">
+        <div class="pass-box">
+            <h2 style="color: #ff0000;">SIYENA ACADEMY</h2>
+            <p>පද්ධතියට ඇතුළු වීමට මුරපදය යොදන්න</p>
+            <input type="password" id="passInput" placeholder="Password Here"><br>
+            <button class="login-btn" onclick="checkPass()">LOGIN</button>
+            <p id="err-msg" style="color: yellow; font-size: 12px; display: none;">මුරපදය වැරදියි!</p>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <div class="top-banner"> ATTENDANCE</div>
+        <div class="sub-info-bar">
+            <div style="font-weight:bold;">GRADE 08 - SIYENA ACADEMY</div>
+            <button onclick="logout()" style="background: #333; color: white; border: none; padding: 5px 10px; cursor: pointer;">LOGOUT</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr class="header-row-dark" id="main-header">
+                        <th class="id-col">ID</th>
+                        <th class="name-col">ශිෂ්‍ය නාමය</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="save-status">Saved!</div>
+
+    <script>
+        // --- මෙතැනට ඔයාගේ Password එක දාන්න ---
+        const MASTER_PASSWORD = "SIYENA@2026"; 
+
+        const totalDays = 300;
+        const students = ["LIYAPALA MENDIS", "MANUKA DEWSITH", "RASHELI PABHODA", "MAYUKA DASAMTH", "MAYICAL JAYASANTE", "NETHULI SAKITHMA", "SAVITHRI MONA", "PANUGA CHAWSATH", "PAHANDI MAYOPA", "INDUWARI THEWANI", "INDUWAN THEWANI", "THARANGA PABAYA", "GULIYAK", "MASSAK", "RIJUWAK", "MALAYAK", "WADAYAK", "PABAYAK", "DOLI BOLI", "DOLI AMANDI", "THARUKA DAMSATH", "BOLI AMANDI", "KASUNI UMESHA", "PABASARANI DEWM", "PABASARA DEWMIN", "NETHSARA JAYALATH", "METHUKI AKARSHA", "PABHODA GIHANI", "MINUWAN DEWHAR", "MADHURA NIMASAD", "DINUSHA METHSARA", "MALMI AMAYA", "PABHODA VISHMI", "NETHMI KAVEESHA", "KASUN GANEWATTA", "NAVIN PABASARA", "KASTURI PERERA", "UMAYA PABSARA", "SITHUKA IMAL", "DIWUL IMSARA", "THINAYA MENUKI", "SAHELI HIRUNDIKA", "AHINSA SANUHARI", "SANJANA RUBERU", "GAVINDU NIMESH", "SADEESHA AKITHMI", "NIPUN THEJAN", "DILUNA DAMSATH", "DANUPA NIMETH", "DINULI DILSHARA"];
+
+        let storageData = JSON.parse(localStorage.getItem('siyenaAttendanceSecure')) || {};
+
+        function checkPass() {
+            const input = document.getElementById('passInput').value;
+            const error = document.getElementById('err-msg');
+            if(input === MASTER_PASSWORD) {
+                document.getElementById('lock-screen').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+                init();
+            } else {
+                error.style.display = 'block';
+            }
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        function init() {
+            const header = document.getElementById('main-header');
+            const body = document.getElementById('attendanceBody');
+            
+            // Header
+            for(let d=1; d<=totalDays; d++) {
+                let key = `h-${d}`;
+                let val = storageData[key] || `D${d}`;
+                header.innerHTML += `<th><input type="text" class="date-input" value="${val}" onchange="saveData('${key}', this.value)"></th>`;
+            }
+
+            // Body
+            students.forEach((name, i) => {
+                let row = document.createElement('tr');
+                let id = i + 1;
+                let html = `<td class="id-col">${id}</td><td class="name-col">${name}</td>`;
+                for(let d=1; d<=totalDays; d++) {
+                    let key = `att-${id}-d${d}`;
+                    let status = storageData[key] || "-";
+                    let btnClass = getBtnClass(status);
+                    html += `<td><button id="${key}" class="status-btn ${btnClass}" onclick="toggleStatus('${key}')">${status}</button></td>`;
+                }
+                row.innerHTML = html;
+                body.appendChild(row);
+            });
+        }
+
+        function getBtnClass(s) {
+            if(s === "PP") return "btn-pp";
+            if(s === "AB") return "btn-ab";
+            if(s === "O") return "btn-o";
+            return "";
+        }
+
+        function toggleStatus(key) {
+            const btn = document.getElementById(key);
+            let next = btn.innerText === "PP" ? "AB" : (btn.innerText === "AB" ? "O" : "PP");
+            btn.innerText = next;
+            btn.className = `status-btn ${getBtnClass(next)}`;
+            saveData(key, next);
+        }
+
+        function saveData(key, val) {
+            storageData[key] = val;
+            localStorage.setItem('siyenaAttendanceSecure', JSON.stringify(storageData));
+            const s = document.getElementById('save-status');
+            s.style.display = 'block';
+            setTimeout(() => s.style.display = 'none', 600);
+        }
+
+        // Allow 'Enter' key for login
+        document.getElementById("passInput").addEventListener("keyup", function(event) {
+            if (event.key === "Enter") checkPass();
+        });
+    </script>
+</body>
+</html>
